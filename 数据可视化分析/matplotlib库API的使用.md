@@ -341,8 +341,19 @@ plt.show()
 - x：进行绘图的序列
 - labels：饼图的各部分标签
 - colors：饼图的各部分颜色，使用RGB标颜色
-- explode：需要突出的块状序列
+- explode：需要突出的块状序列，代表扇形区域距离圆中心的距离
 - autopct：饼图占比的显示格式，%.2f：保留两位小数
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+labels=['A','B','C','D']
+fracs = [15,30,45,10]
+explode= [0,0,0.05,0]
+# 设置x轴和y轴的比例为1:1，这样让饼状图显示为正圆
+plt.axes(aspect=1)
+plt.pie(x=fracs, labels=labels, autopct='%.2f%%', explode=explode)
+```
 
 ### 3.1 范例1
 
@@ -619,7 +630,7 @@ plt.show()
 ![snip_20180102130529](imgs/snip_20180102130529.png)
 
 
-```
+```python
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -659,3 +670,37 @@ plt.yticks([])
 
 plt.show()
 ```
+
+##六、箱线图
+
+箱形图（Box-plot）又称为盒形图或箱线图，是一种用作显示数据分散情况资料的统计图。图中主要元素有
+
+- 上边缘
+- 上四分位数
+- 中位数
+- 下四分位数
+- 下边缘
+- 异常值
+
+**构造函数：boxplot(x, notch=None, sym=None, whis=1.5)**
+
+- sym异常点的形状，sym='o'
+- whis虚线长度，若要异常值包含进来就需要增加whis的大小；
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+np.random.seed(100)
+data = np.random.normal(size=1000, loc=0, scale=1)
+plt.boxplot(data, sym='o', whis=1.6)
+plt.show()
+
+# 画多个箱线图
+labels=['A','B','C','D']
+mdata = np.ramdom.normal(size=(1000,4), loc=0, scale=1)
+plt.boxplot(mdata, labels=labels)
+plt.show()
+```
+
+![box_plot_1](imgs/box_plot_1.png)
