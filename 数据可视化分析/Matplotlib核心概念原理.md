@@ -1,6 +1,6 @@
 # 第一章 Matplotlib核心概念及原理
 
-## 一、Maplotlib核心概念
+## 1、Maplotlib核心概念
 
 matplotlib是基于Python语言的开源项目，旨在为Python提供一个数据绘图包。实际上，matplotlib的对象体系严谨而有趣，为使用者提供了巨大的发挥空间。用户在熟悉了核心对象之后，可以轻易的定制图像。matplotlib的对象体系也是计算机图形学的一个优秀范例。matplotlib使用numpy进行数组运算，并调用一系列其他的Python库来实现硬件交互。matplotlib的核心是一套由对象构成的绘图API。
 
@@ -99,7 +99,7 @@ canvas.print_figure('demo.jpg')
 ```
 
 
-## 二、matplotlib库
+## 2、matplotlib库
 
 ### 2.1. matplotlib库的安装
 
@@ -150,7 +150,372 @@ pip install -U matplotlib
 
 [d3js](https://d3js.org/)中提供了很多可视化图形的layout，很有启发意义。
 
-## 三、Matplotlib函数式API的使用
+##3、Matplotlib基本元素
+
+###3.1 颜色和样式
+
+**颜色** 
+
+1. 八种內建颜色
+
+   | 颜色缩写 | 说明  | 颜色缩写 | 说明    |
+   | -------- | ----- | -------- | ------- |
+   | b        | blue  | m        | magenta |
+   | g        | green | y        | yellow  |
+   | r        | red   | k        | black   |
+   | c        | cyan  | w        | white   |
+
+2. 灰色阴影，color='0.5'，表示用灰度画图，大小表示颜色深浅；
+
+3. 十六进制，color='#FF00FF'
+
+4. RGB元组，color=(0.1, 0.2, 0.3)，
+
+**点和线样式**
+
+当只指定style时$plt.plot(y, 'D')$，只显示点，不会显示线。而若使用marker指定样式$plt.plot(y, marker='D')$时，会在线上显示指定的样式。
+
+| 线型       | 说明                   | 线型            | 说明                            |
+| ---------- | ---------------------- | --------------- | ------------------------------- |
+| -          | solid line、实线       | --              | dashed line、虚线               |
+| -.         | dash-dot line、点划线  | :               | dotted line、点线               |
+| 样式       | 说明                   | 样式            | 说明                            |
+| .          | point marker           | ,               | pixel marker                    |
+| v\|^\|<\|> | （倒\|下\|左\|右）三角 | o、s、p、H、1-4 | 圆、长方形、五角型、六角形、tri |
+| *、+ 、x   | 星、加号               | x、D、d、\|、_  | 叉标记、钻石标记、竖线、横线    |
+
+**样式字符创** ：将颜色、点型、线形写成一个字符创。例如：'cx--'、'mo:'、'kp-'
+
+###3.2 pyplot和面向对象画图函数
+
+pyplot简单易用，交互使用时，可以根据命令实时作图，但底层定制能力不足。面向对象方式，接近Matplotlib基础和底层的方式，定制能力强而且是Matplotlib的精髓。
+
+####3.2.1**子图subplot** 
+
+```python
+import matplotlib.pyplot as plt
+# 创建Figure实例，即创建画布
+fig = plt.figure() 
+
+# 在fig上添加子图
+# 参数：子图总行数、子图总列数、子图位置(初始位置为1)
+# 返回Axes实例
+ax = fig.add_subplot(111)
+ax.plot(x,y)
+```
+
+####3.2.2**多图figure** 
+
+subplot是在一个画布中产生多个子图，而多图在多个画布上创建图。
+
+```python
+import matplotlib.pyplot as plt
+# 创建Figure实例，即创建画布
+fig1 = plt.figure() 
+ax11 = fig1.add_subplot(111)
+ax11.plot(x,y)
+
+fig2 = plt.figure() 
+ax21 = fig1.add_subplot(111)
+ax21.plot(x,y)
+```
+
+####3.2.3**网格：grid** 
+
+网格作为整张图的背景，方便对图进行观察
+
+```python
+import matplotlib.pyplot as plt
+# 方式1
+x, y = [1,2,3,4,5], [2,4,6,6,10]
+plt.plot(x,y)
+plt.grid(True, color='r',linewidth='2', linestyle='--')
+
+# 方式2 面向对象方式，不会上面那样实时效果，即不能修改并立即生效设置
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.grid(color='r',linewidth='2', linestyle='--')
+```
+
+####3.2.4**图例：legend**
+
+```python
+import matplotlib.pyplot as plt
+#方式1 pyploy方式
+x, y = [1,2,3,4,5], [2,4,6,6,10]
+plt.plot(x,y,label='Normal')
+plt.plot(x,y,label='fast')
+# loc：图例位置，[1,2,3,4]对应右上角、左上角、左下角、右下角
+# ncol: 图例有几列，当图例过多时可以分列
+plt.legend(loc='1', ncol=1)
+# plt.plot(x,y)
+# plt.plot(x,y)
+# plt.legend(['Normal', 'Fast'], loc='1', ncol=1)
+
+#方式2 面向对象方式
+fig = plt.figure()
+ax = fig.add_subplot(111)
+l, = ax.plot(x,x)
+ax.legend(['Normal'])
+
+#l.set_label('Normal')
+#ax.legend()
+```
+
+####3.2.5**坐标轴的范围：axis、xlim、ylim** 
+
+```python
+#方式 1
+# 返回坐标范围
+x_min, x_max, y_min, y_max = plt.axis()
+# 设置坐标范围
+plt.axis([-5, 5, 6, 60])
+
+#方式2
+x_min, y_max=plt.xlim()
+y_min, y_max=plt.ylim()
+plt.xlim([-5,5]) = plt.xlim(xmin=-5, xmax=5)
+plt.ylim([6,60]) = plt.xlim(ymin= 6, ymax=60)
+```
+
+####3.2.6**坐标轴刻度：locator_params** 
+
+```python
+"""
+面向对象方式
+"""
+plt.plot(x,x)
+# 获取当前的坐标轴
+ax = plt.gca（）
+# 设置x、y轴刻度数
+ax.locator_params(nbins=20)
+# 只调整x轴或y轴的刻度密度
+ax.locator_params('x', nbins=15)
+ax.locator_params('y', nbins=10)
+
+"""
+日期刻度的调整
+"""
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import datetime
+import numpy
+start , stop = datetime.datetime(2018,3,1), datetime.datetime(2019,3,1)
+delta = datetime.timedelta(days=1)
+
+dates= mpl.dates.drange(start, stop, delta)
+y = np.random.rand(len(dates))
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot_date(dates, y, linestyle='-', marker='o')
+
+# 调整时间显示格式
+dfmt = mpl.dates.DateFormatter('%Y-%m')
+ax.xaxis.set_major_formatter(dfmt)
+
+# 日期刻度显示重合，自适应调整日期刻度
+fig.autofmt_xdate()
+plt.show()
+```
+
+####3.2.7**添加坐标轴：twinx、twiny** 
+
+```python
+"""
+方式1
+"""
+x = np.arange(2, 20, 1)
+y1 = x * x
+y2 = np.exp(x)
+# 双坐标轴
+
+plt.plot(x, y1)
+plt.twinx()
+plt.plot(x, y2, 'r')
+plt.show()
+
+"""
+方式2: 面向对象方式
+"""
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+ax1.plot(x, y1)
+ax1.set_ylabel('Y1')
+
+ax2 = ax1.twinx()
+ax2.set_ylabel('Y2')
+ax2.plot(x, y2, 'r')
+
+ax1.set_xlabel('Compare Y1 and Y2')
+plt.show()
+```
+
+####3.2.8**注释：annotate** 
+
+```python
+x = np.arange(-10, 11, 1)
+y = x * x
+plt.plot(x, y)
+# xy：要注释的点
+# xytext：注释文本的起始坐标
+# arrowprops：定义注释的形状
+plt.annotate("this is bottom", xy=(0, 1), xytext=(0,20), 
+            arrowprops=dict(
+            	facecolor='r', # 箭头的颜色
+                frac=.2, # 箭头占长度的百分比
+                headwidth=20, # 箭头的宽度
+                width=20, #箭身的宽度
+            ))
+
+plt.show()
+```
+
+![annotate使用](imgs/annotate使用.png)
+
+####3.2.9**文字：text**
+
+```python
+x = np.arange(-10, 11, 1)
+y = x * x
+plt.plot(x, y)
+# 参数：x坐标、y坐标、文字
+# style= normal、italic
+# weight=[0-1000]
+# size：字体大小
+# color：字体颜色
+# family：设置字体
+# bbox：将文字圈起来
+plt.text(0, 10, r'$function:y=x^2$', family='fantasy', 
+         weight=500, bbox=dict(
+         	facecolor='r',
+            alpha=0.4
+         ))
+plt.show()
+```
+
+####3.2.10**区域填充：fill、fill_between** 
+
+```python
+x = np.linspace(0, 5 * np.pi, 1000)
+y1 = np.sin(x)
+y2 = np.sin(2*x)
+
+#添加透明度后，重复的颜色会加深
+plt.plot(x, y1)
+plt.fill(x, y1, 'b', alpha=.4)
+plt.plot(x, y2)
+plt.fill(x, y2, 'r', alpha=.4)
+plt.show()
+
+"""
+面向对象方式
+"""
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(x, y1, 'b-', x, y2, 'r--')
+#ax.fill_between(x, y1, y2, facecolor='blue', alpha=.4)
+# interpoloate=True，采用插值对空白处填充颜色，对于离散点有的地方是没有y值，这些区域默认不填充。
+ax.fill_between(x, y1, y2, where=y1>=y2, facecolor='blue', alpha=.4,interpoloate=True)
+ax.fill_between(x, y1, y2, where=y1<y2, facecolor='yellow', alpha=.4, interpoloate=True)
+plt.show()
+```
+
+####3.2.11**形状：patches** 
+
+```python
+import matplotlib.patches as mpatches
+
+fig, ax = plt.subplots()
+
+xy1 = np.array([0.2, 0.2])
+# 圆心位置、半径
+circle = mpatches.Circle(xy1, 0.2)
+ax.add_patch(circle)
+
+#长方形左下角位置
+xy2 = np.array([0.2, 0.8])
+# 左下角位置、宽、高
+rect = mpatches.Rectangle(xy2, .2, .1)
+ax.add_patch(rect)
+
+#多边形
+xy3 = np.array([0.8, 0.2])
+# 中心位置、边数、半径
+polygon = mpatches.RegularPolygon(xy3, 5, 0.1, color='g')
+ax.add_patch(polygon)
+
+# 椭圆
+xy4=np.array([.8, .8])
+#圆心、长直径、短直径
+ellipse = mpatches.Ellipse(xy4, .4, .2, color='y')
+ax.add_patch(ellipse)
+
+# x、y轴比例相等
+plt.axis('equal')
+plt.show()
+```
+
+####3.2.12**样式：plt.style.use** 
+
+```python
+"""
+Matplotlib中提供了美化的方法
+"""
+# 所有可用样式
+plt.style.available 
+plt.style.use('ggplot')
+
+fig, axes = plt.subplots(ncols=2, nrows=2)
+ax1, ax2, ax3, ax4 = axes.ravel()
+
+x, y = np.random.normal(size=(2, 100))
+ax1.plot(x, y, 'o')
+
+# matplotlib默认的颜色循环数
+x = np.arange(10)
+y = np.arange(10)
+ncolors = len(plt.rcParams['axes.color_cycle'])
+shift = np.linspace(0, 10, ncolors)
+for s in shift:
+    ax2.plot(x, y+s, '-')
+
+x = np.arange(5)
+y1, y2, y3 = np.random.randint(1, 25, size=(3,5))
+width=.25
+ax3.bar(x, y1, width)
+ax3.bar(x +width, y2, width, color=plt.rcParams['axes.color_cycle'][1])
+ax3.bar(x + 2 * width, y3, width, color=plt.rcParams['axes.color_cycle'][2])
+
+for i, color in enumerate(plt.rcParams['axes.color_cycle']):
+    xy = np.random.normal(size=2)
+    ax4.add_patch(plt.Circle(xy, radius=.3, color=color))
+ax4.axis('equal')
+plt.show()
+
+```
+
+####3.2.13**极坐标** 
+
+```python
+# 坐标
+r = np.arange(1, 6, 1)
+theta = [0,np.pi / 2, np.pi, np.pi * 3 / 2, np.pi * 2]
+
+ax = plt.subplot(111, projection='polar')
+ax.plot(theta, r, color='r', linewidth=3)
+ax.grid(True)
+plt.show()
+```
+
+![极坐标](imgs/极坐标.png)
+
+
+
+
+
+
+
+## 4、Matplotlib函数式API的使用
 
 ```python
 # -*- coding: utf-8 -*-
