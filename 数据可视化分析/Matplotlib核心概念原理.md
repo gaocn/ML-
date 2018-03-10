@@ -511,9 +511,199 @@ plt.show()
 
 
 
+###3.3 使用范例
 
+####3.3.1 函数积分图
 
+```python
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+def func(x):
+    return -(x-2) * (x - 8) + 40
 
+x = np.linspace(0, 10)
+y = func(x)
+a ,b = 2, 9
+fig, ax = plt.subplots()
+
+ax.plot(x, y, 'r', linewidth=2)
+# 显示指定刻度或不显示刻度
+ax.set_xticks([a, b])
+ax.set_yticks([])
+# 显示刻度为指定字符
+ax.set_xticklabels([r'$a$',r'$b$'])
+# 显示x，y轴的标记
+plt.figtext(.9, .05, r'$x$')
+plt.figtext(.1, .9, r'$y$')
+
+#画多边形
+ix = np.linspace(a, b)
+iy = func(ix)
+ixy = zip(ix, iy)
+verts = [(a,0)] + list(ixy) + [(b,0)]
+poly = mpatches.Polygon(verts, facecolor='.8', edgecolor='.5')
+ax.add_patch(poly)
+# 添加积分公式,水平中心对齐
+ax.text( (a + b)/2 , 30 , r'$\int_{a}^{b}(-(x-2)*(x-8) + 40)dx$', size=20,
+       horizontalalignment='center')
+plt.show()
+```
+
+![函数积分图](imgs/函数积分图.png)
+
+####3.3.2 散点-条形图
+
+```python
+# 首先画出散点图，然后画出x、y各自对应的频率分布直方图
+plt.style.use('ggplot')
+
+x = np.random.randn(200)
+y = x + np.random.randn() * 5
+
+margin_border = .1
+width = .6
+margin_between = .02
+height = .2
+# 主图的坐标
+left_s = margin_border
+bottom_s = margin_border
+height_s = width
+width_s = width
+
+# x坐标的条形图坐标
+left_x = margin_border
+bottom_x = margin_border + width + margin_between
+height_x = height
+width_x = width
+
+# y坐标的条形图坐标
+left_y =  margin_border + width + margin_between
+bottom_y = margin_border
+height_y = width
+width_y = height
+
+fig = plt.figure(1, figsize=(8,8))
+rect_s = [left_s, bottom_s, width_s, height_s]
+rect_x = [left_x, bottom_x, width_x, height_x]
+rect_y = [left_y, bottom_y, width_y, height_y]
+
+axScatter = plt.axes(rect_s)
+axHistX = plt.axes(rect_x)
+axHistX.set_xticks([])
+axHistY = plt.axes(rect_y)
+axHistY.set_yticks([])
+
+axScatter.scatter(x, y, color='b')
+bin_width = .25
+xymax = np.max([np.max(np.fabs(x)), np.max(np.fabs(y))])
+#柱状图的总宽度值
+lim = int(xymax / bin_width + 1) * bin_width
+#axHistX.set_xlim(-lim, lim)
+#axHistX.set_ylim(-lim, lim)
+bins = np.arange(-lim, lim + bin_width, bin_width)
+axHistX.hist(x, bins=bins)
+#axHistY.set_xlim(-lim, lim)
+#axHistY.set_ylim(-lim, lim)
+axHistY.hist(y, bins=bins, orientation='horizontal')
+
+plt.show()
+```
+
+![散点-条形图](imgs/散点-条形图.png)
+
+####3.3.3 球员能力图
+
+```python
+# coding: utf-8
+from matplotlib.font_manager import FontProperties
+
+font = FontProperties(fname=r'C:\Windows\Fonts\simkai.ttf', size=10)
+plt.style.use('ggplot')
+ability_size = 6
+ability_labels = [u'进攻', u'防守', u'盘带', u'速度', u'体力', u'射术']
+ax1 = plt.subplot(221, projection='polar')
+ax2 = plt.subplot(222, projection='polar')
+ax3 = plt.subplot(223, projection='polar')
+ax4 = plt.subplot(224, projection='polar')
+
+player = {
+    '梅西': np.random.randint(size=6, low=60, high=99),
+    '哈维': np.random.randint(size=6, low=60, high=99),
+    '皮克': np.random.randint(size=6, low=60, high=99),
+    '切赫': np.random.randint(size=6, low=60, high=99),
+}
+
+# 需要多变形首尾相连
+for p in player:
+    player[p] = np.append(player[p], player[p][0])
+theta = np.linspace(0, 2*np.pi, 6, endpoint=False)
+theta = np.append(theta, theta[0])
+
+ax1.plot(theta, player['梅西'], 'r')
+ax1.fill(theta, player['梅西'], 'r', alpha=.4)
+ax1.set_xticks(theta)
+ax1.set_xticklabels(ability_labels, y=0.1, fontproperties=font)
+ax1.set_title(u'梅西', fontproperties=font, size=16, color='r')
+
+ax2.plot(theta, player['哈维'], 'g')
+ax2.fill(theta, player['哈维'], 'g', alpha=.4)
+ax2.set_xticks(theta)
+ax2.set_xticklabels(ability_labels, y=0.1, fontproperties=font)
+ax2.set_title(u'哈维', fontproperties=font, size=16, color='g')
+
+ax3.plot(theta, player['皮克'], 'b')
+ax3.fill(theta, player['皮克'], 'b', alpha=.4)
+ax3.set_xticks(theta)
+ax3.set_xticklabels(ability_labels, y=0.1, fontproperties=font)
+ax3.set_title(u'皮克', position=(.5, 1), fontproperties=font, size=16, color='b')
+
+ax4.plot(theta, player['切赫'], 'y')
+ax4.fill(theta, player['切赫'], 'y', alpha=.4)
+ax4.set_xticks(theta)
+ax4.set_yticks([20,40,60,80,100])
+ax4.set_xticklabels(ability_labels, y=0.1, fontproperties=font)
+ax4.set_title(u'切赫', position=(.5, 1),fontproperties=font, size=16, color='y')
+plt.show()
+```
+
+![球员能力图](imgs/球员能力图.png)
+
+####3.3.4 股票k线图
+
+```python
+# 开盘价(实体线下边缘)、最高价(上引线)、最低价(下引线)、收盘价(实体线上边缘)
+# 红色线代表上涨、绿色线代表下跌
+# 对于红色线：开盘价(实体线下边缘)、最高价(上引线)、最低价(下引线)、收盘价(实体线上边缘)
+# 对于绿色线：开盘价(实体线上边缘)、最高价(上引线)、最低价(下引线)、收盘价(实体线下边缘)
+from matplotlib.finance import candlestick_ohlc
+import matplotlib as mpl
+import datetime
+
+start , stop = datetime.datetime(2015,3,1), datetime.datetime(2018,3,1)
+delta = datetime.timedelta(days=1)
+dates= mpl.dates.drange(start, stop, delta)
+quotes = np.random.randint(size=(len(dates), 4), low=40, high=90)
+volumns = np.random.randint(size=(len(dates)), low=100, high=1000)
+
+left, width = .1, .8
+rect_vol = [left, .1, width, .3]
+rect_main = [left, .48, width, .5]
+
+fig = plt.figure()
+# 成交量图
+ax_vol = fig.add_axes(rect_vol)
+ax_vol.fill_between(dates, volumns, color='y', alpha=.8)
+# 调整时间显示格式
+dfmt = mpl.dates.DateFormatter('%Y-%m')
+ax_vol.xaxis.set_major_formatter(dfmt)
+# 旋转x坐标时间显示角度
+plt.setp(ax_vol.get_xticklabels(), rotation=30, horizontalalignment='right')
+# k线图
+ax_main = fig.add_axes(rect_main)
+candlestick_ohlc(ax_main, ?, width=.6, colorup='r', colordown='g')
+plt.show()
+```
 
 ## 4、Matplotlib函数式API的使用
 
