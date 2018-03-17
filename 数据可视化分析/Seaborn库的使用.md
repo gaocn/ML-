@@ -1,0 +1,3 @@
+##Seaborn库的使用
+
+Seaborn其实是在Matplotlib的基础上进行了更高级的API封装，从而使得作图更加容易，在大多数情况下使用Seaborn就能做出很具有吸引力的图。
