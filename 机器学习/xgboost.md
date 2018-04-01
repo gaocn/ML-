@@ -188,3 +188,17 @@ for mean, param in zip(means, params):
 
 ```
 
+##四、Adaboost
+
+Adaboost（Adaptive Boosting，自适应增强）有Yoav Freund 和Robert Schapire在1995年提出。它的自适应在于：前一个基本分类器分错的样本会得到加强，加权后的全体样本再次被用来训练下一个基本分类器。同时，在每一轮中加入一个新的弱分类器，直到达到某个预定的足够小的错误率或达到预先指定的最大迭代次数。
+
+考虑下面两组数据，若采用单层决策树对其进行分割，无论在哪里换一天线都不能将数据完全分开，那么能不能切两刀实现数据分类呢！Adaboost就是将多个弱分类器集成在一起，
+
+![daboost-单层决策树局](imgs_md/Adaboost-单层决策树局限.png)
+
+
+
+
+
+
+
