@@ -184,9 +184,89 @@ average_accuracy = sum(accurates) / len(accurates)
 #  0.6159147034200947
 ```
 
+##四、多类别问题
 
+目前为止提到的分类算法都是针对二分类问题求解的，假设有A、B、C三个类别，如何使用逻辑回归结果呢？这里介绍一种方法$one \ vs \ all$思想，如将三分类问题转换为多个二分类问题
 
+| 分解问题 | 正例    | 负例           |
+| -------- | ------- | -------------- |
+| 1        | A为正例 | B、C都作为负例 |
+| 2        | B为正例 | A、C都作为负例 |
+| 3        | C为正例 | A、B都作为负例 |
 
+这样就让分类器计算出当前样本分别作为A、B、C正例时的概率，那个概率高就将当前样本作为哪一类。
+
+一个特征用列向量表示，例如year的取值有96、97、98、99，则其对应的列向量在pandas中用$pandas.get_dummies$的到结果如下
+
+| dummy表示 | 96   | 97   | 98   | 99   |
+| --------- | ---- | ---- | ---- | ---- |
+| 96        | 1    | 0    | 0    | 0    |
+| 97        | 0    | 1    | 0    | 0    |
+| 98        | 0    | 0    | 1    | 0    |
+| 99        | 0    | 0    | 0    | 1    |
+
+```python
+from sklearn.linear_model import LogisticRegression
+import pandas as pd 
+import matplotlib.pyplot as plt 
+import numpy as np 
+
+columns = ['mpg', 'cylinders', 'displacement', 'horsepower', 'weight', 'acceleration', 'model year','origin', 'car name' ]
+cars = pd.read_table(r'G:\data\auto-mpg.data', names=columns, delim_whitespace=True)
+dummy_cylinders = pd.get_dummies(cars['cylinders'])
+dummy_cylinders.columns = ['cyl_%s' % col for col in dummy_cylinders.columns]
+cars = pd.concat([cars, dummy_cylinders], axis=1)
+
+dummy_years = pd.get_dummies(cars['model year'])
+dummy_years.columns = ['year_%s' % col for col in dummy_years.columns]
+cars = pd.concat([cars, dummy_years], axis=1)
+
+cars = cars.drop('cylinders', axis=1)
+cars = cars.drop('model year', axis=1)
+
+# 划分测试集、训练集
+shuffled_rows = np.random.permutation(cars.index)
+shuffled_cars = cars.iloc[shuffled_rows]
+highest_train_row = int(cars.shape[0] * .70)
+train = shuffled_cars.iloc[0:highest_train_row]
+test  = shuffled_cars.iloc[highest_train_row:]
+
+# 做三分类的任务，采用 one vs all方法
+# 获取三个类别
+unique_origins = cars['origin'].unique()
+unique_origins.sort()
+
+models = {}
+features = [c for c in train.columns if c.startswith('cyl') or c.startswith('year')]
+#['cyl_3', 'cyl_4', 'cyl_5', 'cyl_6', 'cyl_8', 'year_70', 'year_71',
+# 'year_72', 'year_73', 'year_74', 'year_75', 'year_76', 'year_77',
+# 'year_78', 'year_79', 'year_80', 'year_81', 'year_82']
+
+# 进行三次二分类
+for origin in unique_origins:
+    model = LogisticRegression()
+
+    X_train = train[features]
+    # orgin对应的类别为正例，其他类别为负例
+    y_train = train['origin'] == origin
+
+    model.fit(X_train, y_train)
+    models[origin] = model
+
+# 验证模型
+testing_probs = pd.DataFrame(columns=unique_origins)
+for origin in unique_origins:
+    X_test = test[features]
+    # compute probability of observation being  in 
+    testing_probs[origin] = models[origin].predict_proba(X_test)[:, 1]
+
+#            1         2         3
+#0    0.960009  0.051576  0.012579
+#1    0.972115  0.023798  0.024272
+#2    0.887651  0.035832  0.099203
+#3    0.885822  0.100457  0.076915
+#4    0.852663  0.051005  0.097233
+```
 
 
 
