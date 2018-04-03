@@ -140,6 +140,62 @@ print(auc_score)
 
 ##三、交叉验证
 
+样本数据是要划分为训练集、测试集，那么存在一种情况导致切分后数据分布不均衡，例如在测试集中存在异常点比较多或训练集中异常点比较多，这就导致在训练模型是得到的结果不会很准确。如下图所示，将样本集切缝成大小相同的五个部分，如各自有100个数据，取其中的一份作为测试集，其余的4份作为训练集，每一次迭代的训练集和测试集不同，通过交叉的方式训练模型，有训练得到的5个模型共同得出最终的模型（如求5个模型结果的平均值作为最终结果），这种训练模型的方式称为交叉验证。
+
+![叉验证图](imgs_md/交叉验证图例.png)
+
+```python
+# 交叉验证，数据集的拆分
+# 取一部分作为训练数据，一部分作为测试数据
+# 过拟合：在训练数据表现很好，在测试数据表现很差！
+shuffled_index = np.random.permutation(admissions.index)
+shuffled_admissions = admissions.loc[shuffled_index]
+admissions = shuffled_admissions.reset_index()
+admissions.ix[0:128,   "fold"] = 1
+admissions.ix[129:257, "fold"] = 2
+admissions.ix[257:386, "fold"] = 3
+admissions.ix[387:514, "fold"] = 4
+admissions.ix[515:644, "fold"] = 5
+admissions['fold'] = admissions['fold'].astype('int')
+```
+
+**Sklearn库做交叉验证**
+
+sklearn.model_selection.KFold(n_folds=3, shuffle=False, random_state=None)
+
+- n_folds：需要将观测集切分成几份
+- shuffle：是否随机排列观测集
+- random_state：shuffle=True时，指定随机排列观测集的random seed
+
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
+
+admissions = pd.read_csv(r'G:\data\admissions.csv', na_filter=True)
+admissions['actual_labels'] = admissions['admit']
+admissions = admissions.drop('admit', axis=1)
+kf = KFold(5, shuffle=True, random_state=8)
+lr = LogisticRegression()
+
+accurates = cross_val_score(lr, admissions[['gpa']], admissions['actual_labels'], scoring='roc_auc', cv=kf)
+# array([0.70175439, 0.5023511 , 0.60750507, 0.59722222, 0.67074074])
+average_accuracy = sum(accurates) / len(accurates)
+#  0.6159147034200947
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
