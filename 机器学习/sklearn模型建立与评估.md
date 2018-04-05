@@ -268,13 +268,227 @@ for origin in unique_origins:
 #4    0.852663  0.051005  0.097233
 ```
 
+##五、随机森林建模
 
+```python
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import KFold
+import matplotlib.pyplot as plt 
+import pandas as pd 
+import numpy as np 
+import time
 
+titanic = pd.read_csv(r'G:\data\titanic.csv')
+titanic.describe()
+#       PassengerId    Survived      Pclass         Age       SibSp  \
+#count   891.000000  891.000000  891.000000  714.000000  891.000000
+#       Parch        Fare
+#        891.000000  891.000000
 
+#Age数据出现丢失，为na，用均值填充
+titanic['Age'] = titanic['Age'].fillna(titanic['Age'].median())
+#       PassengerId    Survived      Pclass         Age       SibSp  \
+#count   891.000000  891.000000  891.000000  891.000000  891.000000
+#mean    446.000000    0.383838    2.308642   29.361582    0.523008
+#std     257.353842    0.486592    0.836071   13.019697    1.102743
+#            Parch        Fare
+#count  891.000000  891.000000
+#mean     0.381594   32.204208
 
+#对字符串，Sex、Embarked(上船地点)列，pandas是无法处理的，需要将其转换为数值量
+#
+titanic.loc[titanic['Sex'] == 'male', 'Sex'] = 0 
+titanic.loc[titanic['Sex'] == 'female', 'Sex'] = 1 
+# Embarked也存在控制，这里用众数填充
+titanic['Embarked'].unique()
+titanic['Embarked'] = titanic['Embarked'].fillna('S')
+titanic.loc[titanic['Embarked'] == 'S', 'Embarked'] = 0 
+titanic.loc[titanic['Embarked'] == 'C', 'Embarked'] = 1 
+titanic.loc[titanic['Embarked'] == 'Q', 'Embarked'] = 2 
+#       PassengerId    Survived      Pclass         Sex         Age  \
+#count   891.000000  891.000000  891.000000  891.000000  891.000000
+#            SibSp       Parch        Fare    Embarked
+#count  891.000000  891.000000  891.000000  891.000000
+# 要传递给模型的特征
+predictors = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']
+# initialize model
+alg = LinearRegression()
 
+# Generate cross validation folds for the titanic dataset, It return the row
+# indices corresponding to train and test. We set random_state to ensure we get
+# the splits every time we run it
+kf = KFold(n_splits=3, random_state=1)
 
+predictions = []
+for train, test in kf.split(titanic):
+    train_predictors = (titanic[predictors].iloc[train, :])
+    train_target = titanic['Survived'].iloc[train]
 
+    alg.fit(train_predictors, train_target)
+    test_predictions = alg.predict(titanic[predictors].iloc[test, :])
+    predictions.append(test_predictions)
+# print(predictions)
+
+# The predictions are in three separate numpy arrays. Concatenate them into one.
+# We concatnate them on axis 0, as they only have one axis.
+predictions = np.concatenate(predictions, axis=0)
+
+# Map predictions to outcomes (Only possible outcomes are 1 and 0)
+predictions[predictions > 0.5] = 1
+predictions[predictions <= .5] = 0
+accuracy = sum(predictions[predictions == titanic["Survived"]]) / len(predictions)
+print(accuracy)
+# 0.2615039281705948
+
+from sklearn.linear_model import LogisticRegression
+alg = LogisticRegression(random_state=1)
+scores = cross_val_score(alg, titanic[predictors], titanic['Survived'], cv=3)
+print(scores, scores.mean())
+#[0.78451178 0.78787879 0.79124579] 0.7878787878787877
+
+# 使用随机森林改进模型，通常是分类任务的首选
+from sklearn.ensemble import RandomForestClassifier
+# 树的高度过高会导致过拟合现象
+alg = RandomForestClassifier(
+    random_state=1,
+    n_estimators=10,     # number of trees we want to make
+    min_samples_split=2, # minimum number of rows we need to make a split
+    min_samples_leaf=1   # 叶子节点最少样本个数
+)
+kf = KFold(n_splits=3, shuffle=True, random_state=1)
+scores = cross_val_score(alg, titanic[predictors], titanic['Survived'], cv=kf)
+print(scores, scores.mean())
+# [0.77104377 0.79461279 0.82154882] 0.7957351290684626
+
+# 树的高度过高会导致过拟合现象
+alg = RandomForestClassifier(
+    random_state=1,
+    n_estimators=50,     # number of trees we want to make
+    min_samples_split=4, # minimum number of rows we need to make a split
+    min_samples_leaf=2   # 叶子节点最少样本个数
+)
+kf = KFold(n_splits=3, shuffle=True, random_state=1)
+scores = cross_val_score(alg, titanic[predictors], titanic['Survived'], cv=kf)
+print(scores, scores.mean())
+# [0.78787879 0.83164983 0.85858586] 0.8260381593714926
+
+"""
+# 当模型优化的差不多时，还想要提高准确度，那么应该怎么进行呢？
+# 达到瓶颈后，需要回过头来看数据、数据特征提取有用的特征或数据量来继续优化
+"""
+# 提取新的特征
+titanic['FamilySize'] = titanic['SibSp'] + titanic['Parch']
+# 假设名字长度与是否逃生成功有关！！
+titanic['NameLength'] = titanic['Name'].apply(lambda x: len(x))
+
+# 假设人名的称呼：Mr,Miss,Master等于结果有关，将其添加为新的特征“Title”
+import re
+
+def get_title(name):
+    title_search = re.search(r' ([A-Za-z]+)\.', name)
+    if title_search:
+        return title_search.group(1)
+    return ""
+titles = titanic['Name'].apply(get_title)
+print(pd.value_counts(titles))
+
+# 将称呼映射称为数值
+title_map = {
+    'Mr': 1,  'Miss': 2,  'Mrs': 3,  'Master': 4,  'Dr': 5,  'Rev': 6,
+    'Major': 7,  'Col': 8,  'Mlle': 9, 'Don': 10,  'Lady': 11,  'Sir': 12,
+    'Jonkheer': 13,  'Capt': 14,  'Countess': 15,  'Mme': 16,  'Ms': 17
+}
+for k, v in title_map.items():
+    titles[titles == k] = v
+print(pd.value_counts(titles))
+titanic['Title'] = titles
+
+"""
+随机森林特征重要性分析
+如何判断特征是否重要？首选对所有选择特征建立随机森林模型，得出一个errOOB错误率，假设要衡量3号特征的重要性，则把3号特征对应的样本使用例如高斯噪音填充，然后再对其建模后得到一个errOOB错误率，若前后两个errOOB差别不大这说明3号特征不太重要，对结果影响不大！
+"""
+predictors = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked', 'FamilySize', 'NameLength','Title']
+
+# 选出其中比较重要的特征
+from sklearn.feature_selection import SelectKBest, f_classif
+
+selector = SelectKBest(f_classif, k=5)
+selector.fit(titanic[predictors], titanic['Survived'])
+
+# get the raw p-value for each feature and transform from p-value into score
+scores = - np.log10(selector.pvalues_)
+
+# plot the scores, See How 'Pclass', 'Sex', 'Title', 'Fare are the best?
+plt.bar(range(len(predictors)), scores)
+plt.xticks(range(len(predictors)), predictors, rotation='30')
+plt.show()
+
+# pick only for best features
+predictors = ['Pclass', 'Sex', 'Title', 'Fare']
+alg = RandomForestClassifier(
+    random_state=1,
+    n_estimators=50, 
+    min_samples_split=8,
+    min_samples_leaf=4
+)
+kf = KFold(n_splits=3, shuffle=True, random_state=1)
+scores = cross_val_score(alg, titanic[predictors], titanic['Survived'], cv=kf)
+print(scores, scores.mean())
+```
+
+![征重要性分](imgs_md/特征重要性分析.png)
+
+**多模型组合建模**：例如使用SVM、RandomForest、xgboost多个模型共同决定分类结果，
+
+```python
+"""
+集成多个模型，综合给出结果
+"""
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+
+# 组合两个分类模型
+algorithms = [
+    [
+        RandomForestClassifier(random_state=1, n_estimators=25, max_depth=3), 
+        ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']
+    ],
+    [
+        LogisticRegression(random_state=1),
+        ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']
+    ]
+]
+
+kf = KFold(n_splits=3, random_state=1)
+predictions = []
+for train, test in kf.split(titanic):
+    train_target = titanic['Survived'].iloc[train]
+    full_test_predictions = []
+
+    # make predictions for each algorithm for each fold
+    for alg, predictors in algorithms:
+        alg.fit(titanic[predictors].iloc[train, :], train_target)
+        # Select and predict on the test fold
+        # the .astype(float) is necessary to convert the dataframe 
+        #   to all floats and avoid a sklearn errir
+        test_predictions = alg.predict_proba(titanic[predictors].iloc[test, :].astype(float))[:, 1]
+        full_test_predictions.append(test_predictions)
+    
+    # use a simple ensembling scheme: just average the predictions to get the final classification
+    test_predictions = (full_test_predictions[0] + full_test_predictions[1]) / 2
+    # any value over .5 is assumed to a 1 prediction, and below .5 is a 0 prediciton
+    test_predictions[test_predictions > .5] = 1
+    test_predictions[test_predictions <= .5] = 0
+    predictions.append(test_predictions)
+
+# put all the predictions together into one array
+predictions = np.concatenate(predictions, axis=0)
+
+# compute accuracy
+accuracy = sum(predictions[predictions == titanic['Survived']]) / len(predictions)
+print(accuracy)
+```
 
 
 
