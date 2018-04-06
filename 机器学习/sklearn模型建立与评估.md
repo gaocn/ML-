@@ -490,7 +490,171 @@ accuracy = sum(predictions[predictions == titanic['Survived']]) / len(prediction
 print(accuracy)
 ```
 
+##六、客户流失预警分析
 
+```python
+import pandas as pd
+import numpy as np 
+
+churns = pd.read_csv(r'G:\data\chrun.csv')
+# print(churns.head())
+col_names = churns.columns.tolist()
+print(col_names)
+
+"""
+预处理
+    1、特征提取
+    2、字符处理
+"""
+churn_result = churns['Churn?']
+y = np.where(churn_result == 'True.', 1, 0)
+print(pd.Series(y).value_counts())
+# 0    2850  数据不均衡
+# 1     483
+
+to_drop = ['State', 'Area Code', 'Phone', 'Churn?']
+churn_feat_space = churns.drop(to_drop, axis=1)
+
+# yes or no has to be converted to boolean values
+yes_no_cols = ["Int'l Plan", 'VMail Plan']
+churn_feat_space[yes_no_cols] = churn_feat_space[yes_no_cols] == 'yes'
+print(churn_feat_space[yes_no_cols])
+
+# Pull out features for future use
+features = churn_feat_space.columns
+
+X = churn_feat_space.as_matrix().astype(np.float)
+print(X)
+
+"""
+预处理
+    将特征值归一化或标准化
+"""
+from sklearn.preprocessing import StandardScaler, Normalizer
+scalar = StandardScaler()
+X = scalar.fit_transform(X)
+
+print(X)
+print('Feature space holds %d observations and %d features' % X.shape)
+print('Unique taget labels:', np.unique(y))
+
+
+"""
+数据不均衡处理
+"""
+from imblearn.over_sampling import SMOTE
+sm = SMOTE(random_state=1)
+X_oversample, y_oversample = sm.fit_sample(X, y)
+print(X_oversample, y_oversample)
+
+"""
+划分训练集合测试集
+"""
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
+
+X_trian_oversample, X_test_oversample, y_train_oversample, y_test_oversample =  \
+    train_test_split(X_oversample, y_oversample, test_size=0.3, random_state=1)
+
+"""
+选取模型，训练模型
+"""
+from sklearn.model_selection import KFold, cross_val_score
+from sklearn.ensemble import RandomForestClassifier as RFC
+from sklearn.neighbors import KNeighborsClassifier as KNN 
+from sklearn.svm import SVC
+
+def run_cv(X, y, clf_class, **kwargs):
+    kf = KFold(n_splits=5, random_state=1)
+    y_pred = y.copy()
+
+    for train_index, test_index in kf.split(y):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train = y[train_index]
+
+        clf = clf_class(**kwargs)
+        clf.fit(X_train, y_train)
+        y_pred[test_index] = clf.predict(X_test)
+    return y_pred
+
+def accuracy(y_true, y_pred):
+    # numpy interprets True and False as 1 and 0
+    return np.mean(y_true == y_pred) 
+
+print('Support Vector Machines: ')
+print('%.3f' % accuracy(y_train_oversample, run_cv(X_trian_oversample, y_train_oversample, SVC)))
+print('Random Forest Classifier: ')
+print('%.3f' % accuracy(y_train_oversample, run_cv(X_trian_oversample, y_train_oversample, RFC)))
+print('K Nearest Neighour: ')
+print('%.3f' % accuracy(y_train_oversample, run_cv(X_trian_oversample, y_train_oversample, KNN)))
+
+"""
+实际上我们不关心准确度，而是想要看recall召回率，对于那些流失的客户我们没有预测出来是我们需要关心的。
+mAP：是为了解决Precision、Recall、F-measure的单点值局限性。
+我们希望Precision和Recall越高越好！，为此可以求出
+
+"""
+
+
+"""
+应用阈值
+    对于流失的用户其概率不同，我们可能希望首先关心那些90%以上会流失的用户，对这些客户优先处理，例如客服打电话挽留。
+    因此需要提升优先级，对最有可能流失的用户先做处理。
+"""
+def run_proba_cv(X, y, cls_class, **kwargs):
+    kf = KFold(n_splits=5, random_state=1, shuffle=True)
+    y_pred_proba = np.zeros((len(y), 2))
+
+    for train_index, test_index in kf.split(y):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train = y[train_index]
+
+        clf = cls_class(**kwargs)
+        clf.fit(X_train, y_train)
+        y_pred_proba[test_index] = clf.predict_proba(X_test)
+    return y_pred_proba
+
+
+import warnings
+warnings.filterwarnings('ignore')
+
+# use 10 estimators, so predictions are all multiplies of 0.1
+y_pred_proba = run_proba_cv(X_trian_oversample, y_train_oversample, RFC, n_estimators=10)
+print(y_pred_proba)
+
+pred_churn = y_pred_proba[:, 1]
+is_churn = y_train_oversample == 1
+print(is_churn)
+
+# number of times a predicted probablity is assigned to an observation
+counts = pd.value_counts(pred_churn)
+print(counts)
+
+# calculate true probability
+true_prob = {}
+for prob in counts.index:
+    # numpy interprets True and False as 1 and 0
+    true_prob[prob] = np.mean(is_churn[pred_churn == prob])
+    true_prob = pd.Series(true_prob)
+
+counts = pd.concat([counts, true_prob], axis=1).reset_index()
+counts.columns = ['Pred_prob', 'Count', 'True_prob']
+print(counts)
+"""
+    Pred_prob  Count  True_prob
+0         1.0    999   0.997998
+1         0.0    673   0.005944
+2         0.1    588   0.025510
+3         0.9    456   0.986842
+4         0.2    381   0.070866
+5         0.3    212   0.122642
+6         0.8    210   0.900000
+7         0.7    134   0.873134
+8         0.4    121   0.305785
+9         0.5    109   0.532110
+10        0.6    107   0.700935
+"""
+```
 
 
 
