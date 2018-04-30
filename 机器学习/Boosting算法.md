@@ -302,6 +302,9 @@ Adaboost（Adaptive Boosting，自适应增强）有Yoav Freund 和Robert Schapi
 
 
 
+
+Adaboost算法可以看做是采用指数损失函数的提升算法，训练误差以指数速率下降，Adaboost算法不需要事先知道下界具有自适应性，它能自适应弱分类器的训练误差率。
+
 **Adaboost算法举例**
 $$
 \begin{matrix}
@@ -390,3 +393,29 @@ $$
 G(x) = sign[a_1 * G_1(x) + a_2 * G_2(x)+ a_3 * G_3(x)] \\
 = sign[0.4236 * G_1(x) + 0.6496 * G_2(x)+ 0.7514 * G_3(x)]
 $$
+
+
+
+##6. 偏差与方差
+
+给定数据D，自变量x的相应真实值为y(x)，预测值为$h_{\theta}(x, D)$，使用平方误差作为目标函数：$E_D[y(x) - h_{\theta}(x, D)]^2$，则
+$$
+E_D[y(x) - h_{\theta}(x, D)]^2 = E_D[y(x) - E_D[y(x)] + E_D[y(x)] - h_{\theta}(x, D)]^2 \\
+= E_D[ \{y(x) - E_D[y(x)]  \}^2 +  \{E_D[y(x)] - h_{\theta}(x, D)\}^2 + 2\{y(x) \\- E_D[y(x)]\}\{ E_D[y(x)] - h_{\theta}(x, D) \}] \\
+\Downarrow  E\{ y(x) - E_D[y(x)\} = 0 \\
+=  E_D[ \{y(x) - E_D[y(x)]  \}^2 +  \{E_D[y(x)] - h_{\theta}(x, D)\}^2] \qquad \quad  \ \  \ \\
+=\underbrace{E_D[\{  y(x) - E_D[y(x)]\}^2]}_{方差Var} + \underbrace{\{E_D[y(x)] - h_{\theta}(x, D)\}^2}_{偏差Bias^2} \qquad \quad \ \ \ 
+$$
+如下图所示，圆心为完美预测的模型，蓝色点代表某个模型的学习结果，距离靶心越远，准确率越低。**低偏差表示离圆心近，高偏差表示距离圆心圆。高方差表示学习结果分散，低方差表示学习结果集中。** 
+
+![方差与偏差](imgs_md/方差与偏差.png)
+
+- Bagging能够减少训练**方差Variance**，对于不剪枝的决策树、神经网络等学习器有良好的集成效果；
+- Boosting能够减少**偏差Bias**，能够基于泛化能力较弱的学习起器构造强学习器；
+
+
+
+
+
+
+
