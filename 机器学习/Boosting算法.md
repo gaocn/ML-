@@ -146,6 +146,8 @@ $$
 
 ##4. xgboost使用
 
+![数据清理原则](imgs_md/数据清理原则.png)
+
 ```python
 from numpy import loadtxt
 from xgboost import XGBClassifier
@@ -299,6 +301,7 @@ Adaboost（Adaptive Boosting，自适应增强）有Yoav Freund 和Robert Schapi
    $$
    G(x) = sign(f(x)) = sign(\sum_{1}^{M}a_m G_m(x))
    $$
+
 
 
 
