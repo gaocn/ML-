@@ -1,12 +1,66 @@
-#xgboost
+#Boosting提升算法
 
-##一、集成算法思想
+##1. 提升算法原理
 
-通常在做一个分类或回归任务的时候，有时使用一个分类器得到的结果并不理想。我们可以集成思想，首先我们有一堆分类器，把这些单一分类器称为弱分类器，通过组合弱分类器得到一个集成的分类器，这样就可以通过集成思想得到一个好的算法。如下图所示，通过使用两个分类器集成一个分类器。
+提升是一个机器学习技术，可以用于回归和分类问题，它每一步产生一个弱预测模型，并加权累加到总模型中，如果每一步的弱预测模型生成都是依据损失函数的**梯度方向**，则称之为**梯度提升(Gradient boosting)**，其中梯度提升中的学习步长就是对应弱分类器的权值。提升的理论意义：如果一个问题存在弱分类器，则可以通过提升的办法得到强分类器。梯度提升算法首先给定一个目标损失函数，它的定义域是所有可行的**弱函数集合(基函数)**，然后通过迭代选择一个**负梯度方向**上的基函数来逐渐逼近局部最小值。
 
-![成算法思](imgs_md/集成算法思想.png)
+给定输入向量x和输出变量y组成的若干训练样本$(x_1,y_1),(x_2,y_2),...,(x_n,y_n)$，目标是找到近似函数$\hat{F(\vec{x})}$，使得损失函数$L(y, F(\vec{x}))$的损失值最小，常用的损失函数有
+$$
+L(y,F(\vec{x})) = \frac{1}{2}(y - F(\vec{x}))^2 \qquad L(y,F(\vec{x})) = |y - F(\vec{x})|
+$$
+其中假定$F(\vec{x})$是一族基函数$f_i(\vec{x})$的加权和，即有若干弱分类器构成的强分类器
+$$
+F(\vec{x}) = \sum_{i=1}^{M}\gamma_i f_i(\vec{x}) + const
+$$
 
-##二、xgboost基本原理
+1. 均方误差作为损失函数时，最优函数为$F^*(\vec{x})$为
+
+$$
+F^*(\vec{x}) = \underset{F}{arg \ min} E_{(x,y)}[L(y, F(\vec{x}))]
+$$
+
+​	**证明** 对于$F(\vec{x})=\underset{\gamma}{arg \ min}\sum_{i=1}^{m}L(y_i, \gamma)$，则其最优解为$\gamma^* = \frac{1}{m}\sum_{i=1}^{m}\gamma_i$
+
+2. 绝对值误差作为损失函数时，最优函数为$L(y, F(\vec{x}))$的中位数
+
+   **证明** 给定样本$x_1,x_2,...,x_n$，计算$\mu^*=arg \ min \sum_{i=1}^{n}|x_i - \mu|$ ，为方便推导，由于样本顺序无关，假定样本是递增排序的，则有$J(\mu) = \sum_{i=1}^{n}|x_i - \mu| = \sum_{i=1}^{k}(\mu - x_i) + \sum_{i=k+1}^{n}(x_i - \mu)$，对$J(\mu)$求偏导可以得到$\frac{\partial J(\mu)}{\partial \mu} = \sum_{i=1}^{k}(1) + \sum_{i=k+1}^{n}(-1) = 0$，从而，前k个样本数目与后n-k个样本数目相同，即$\mu$为中位数。
+
+**梯度提升算法推导**
+
+梯度提升算法寻找最优解$F(\vec{x})$，使得损失函数在训练集上的期望最小，一般解法是通过**贪心算法**，假设当前已使用m-1个基函数构成了模型$F_{m-1}(\vec{x})$，当前迭代次数为i，现需要加入$f(\vec{x})$弱分类器，则为得到最优模型$F_m(\vec{x})$则需要求解
+$$
+F_m(\vec{x}) = F_{m-1}(\vec{x}) + \underset{f \in H}{arg \ min} \sum_{i=1}^{n}L(y_i, F_{m-1}(\vec{x_i}) + f(\vec{x_i}))
+$$
+即希望加入新的基函数之后，能够使得总的损失值降到最低。但用贪心算法在每次选择最优基函数$f$时任然困难，为此引入**梯度下降法**近似计算，将样本带入基函数$f$得到$f(\vec{x_1}),f(\vec{x_2}),...,f(\vec{x_n})$则$L$退化为向量$L(y_1,f(\vec{x_1})),...,L(y_n,f(\vec{x_n}))$，则有
+$$
+F_m(\vec{x}) = F_{m-1}(\vec{x}) - \gamma_m \sum_{i=1}^{n}\triangledown_f L(y_i, F_{m-1}(\vec{x_i}))
+$$
+其中权值$\gamma$为梯度下降的步长，使用**线性搜索**求最优步长
+$$
+\gamma_m = \underset{\gamma}{arg \ min}\sum_{i=1}^{n}L(y_i, F_{m-1}(\vec{x_i}) - \gamma \cdot \triangledown_f L(y_i, F_{m-1}(\vec{x_i})))
+$$
+**提升算法流程**
+
+1. 初始给定模型为常数$F_0(\vec{x}) = \underset{\gamma}{arg \min}\sum_{i=1}^{n}L(y_i, \gamma)$
+2. 对于m = 1 到M
+   1. 计算**伪残差(pseudo residuals)**$r_{im}=[\frac{\partial{L(y_i, F(\vec{x_i}))}}{\partial{F(\vec{x_i})}}]_{F(\vec{x}) = F_{m-1}(\vec{x})}$，其中i=1,2,..,n
+   2. 使用数据$\{(\vec{x_i}, r_{im})\}_{i=1}^{n}$计算**拟合残差**的基函数$f_m(x)$，即采用弱分类器进行训练得到最优弱分类器；
+   3. 计算步长(一维优化问题)，$\gamma_m = \underset{\gamma}{arg \min}\sum_{i=1}^{m}L(y_i, F_{m-1}(\vec{x_i}) - \gamma \cdot f_m(\vec{x_i}))$ 
+   4. 更新模型$F_m(\vec{x}) = F_{m-1}(\vec{x}) - \gamma_m \cdot f_m(\vec{x_i})$
+
+
+
+##2. 梯度提升决策树GBDT
+
+
+
+
+
+
+
+
+
+##3. xgboost基本原理
 
 设预测值$\hat{y_i} = \sum_j w_j x_{ij}$为样本与权值的线性组合，使用均方误差作为目标函数$L(y_i，\hat{y_i})=(y_i - \hat{y_i})^2$，我们希望目标函数的值越小越好。对于一个样本可以计算其损失值，对于一组样本得到一组损失值，我们希望得到的损失值的均值最小，则最优函数为$F^*(x) = arg \ min E_{x,y} [L(y, F(x))]$，即求样本损失值得期望最小。
 
@@ -26,7 +80,7 @@ $$
 
 模型自身也有惩罚项，例如针对决策树模型，叶子节点个数不能太多，容易出现过拟合。在xgboost中的惩罚项为，其中$\lambda$为惩罚力度，$\Omega(f_t)$为正则化惩罚项
 $$
-\Omega(f_t) = \gamma \underbrace{T}_{叶子节点个数} + \frac{1}{2} \lambda \sum_{j=1}^{T} w^2_j
+\Omega(f_t) = \gamma \cdot \underbrace{T_t}_{叶节点数} + \frac{1}{2} \lambda \underbrace{\sum_{j=1}^{T} w^2_i}_{w的L2模平方}
 $$
 ![gboost惩罚](imgs_md/xgboost惩罚项.png)
 
@@ -58,6 +112,7 @@ $$
 $$
 Obj^{(t)} \approx  \sum_{i=1}^{n}[ g_i f_t(x_i) + \frac{1}{2} h_i f_t^2(x_i)] + \Omega(f_t)   \ （样本上遍历） \\
 =  \sum_{i=1}^{n}[ g_i w_{q(x_i)} + \frac{1}{2} h_i w^2_{q(x_i)} ] + \gamma T + \lambda \frac{1}{2} \sum^T_{j=1} w_j^2 \ （样本上遍历） \\
+\Downarrow 按照落在相同叶节点的不同样本累加进行替换\\
 =  \sum_{j=1}^{T} [ (\sum_{i \in I_j} g_i) w_j + \frac{1}{2}(\sum_{i \in I_j }h_i + \lambda) w_j^2] + \gamma T \ （叶子节点上遍历） \\
 \Downarrow G_j = \sum_{i \in I_j} g_i \qquad  H_j = \sum_{i \in I_j }h_i  \\
 =\sum_{j=1}^{T} [ G_j w_j + \frac{1}{2}(H_j + \lambda) w_j^2] + \gamma T  \qquad \qquad \qquad \qquad \qquad \qquad \\
@@ -68,13 +123,11 @@ $$
 $$
 带入目标函数可以得到
 $$
-Obj = - frac{1}{2} \sum_{j=1}^{T}\frac{G^2_j}{H_j + \lambda} + \gamma T
+J(f_t) = - \frac{1}{2} \sum_{j=1}^{T}\frac{G^2_j}{H_j + \lambda} + \gamma T
 $$
-Obj代表了当我们指定一个树的结构时，我们在目标上面最多减少做少。我们可以称之为结构分数(Structure Score)。可以认为这个就是类似基尼系数一样更加一般的对于树结构进行打分的函数。
+$J(f_t)$代表了当我们指定一个树的结构时，我们在目标上面最多减少多少。我们可以称之为结构分数(Structure Score)。可以认为这个就是类似基尼系数一样更加一般的对于树结构进行打分的函数。
 
-**范例**
-
-打分函数的计算方式如下图所示，有三个叶子节点$I_1，I_2，I_3$，其中$I_1$上有1号样本，$I_2$上有4号样本，$I_3$上有2,3,5号样本， 
+**范例** 打分函数的计算方式如下图所示，有三个叶子节点$I_1，I_2，I_3$，其中$I_1$上有1号样本，$I_2$上有4号样本，$I_3$上有2,3,5号样本
 
 ![gboost求解实](imgs_md/xgboost求解实例.png)
 
@@ -82,15 +135,16 @@ Obj代表了当我们指定一个树的结构时，我们在目标上面最多�
 $$
 Gain = \frac{1}{2} [\frac{G_L^2}{H_L + \lambda} + \frac{G_R^2}{H_R + \lambda} - \frac{(G_L + G_R)^2}{G_L + G_R + \lambda}] - \gamma
 $$
-对于每一次扩展，如何高效地枚举所有的分割呢？假设我们要枚举所有$x < a$这样的条件，对于某个特定的分割$a$我们要计算$a$左边和右边的导数和。
+对于每一次扩展，如何高效地枚举所有的分割呢？借鉴ID3/ID4.5/CART的做法，使用贪心算法：
+
+1. 对于某个可行划分，计算划分后的$J(f_t)$;
+2. 对于所有可行划分，选择$J(f_t)$降低最小的分割点；
 
 ![gboost拆分策](imgs_md/xgboost拆分策略.png)
 
 总结：xgboost算法可以得到一个求损失函数的公式，我们就能够计算每一个样本的损失函数值是多少，这样就可以用损失函数值建立模型，即该如何切分节点。
 
-
-
-##三、xgboost使用
+##4. xgboost使用
 
 ```python
 from numpy import loadtxt
@@ -143,7 +197,6 @@ from numpy import loadtxt
 from xgboost import XGBClassifier 
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedFold
-
 """
 常见的参数
 1、learning_rate，基本是0.1以下
@@ -151,13 +204,10 @@ from sklearn.model_selection import StratifiedFold
     max_depth、min_child_wight、subsample、colsample_bytree、gamma
 3、正则化参数，lambda、alpha
 """
-
-
 dataset = loadtxt('pima-indians-diabetes.csv', delimiter=',')
 
 X = dataset[:, 0:8]
 Y = dataset[:, 8]
-
 model = XGBClassifier(
     learning_rate = 0.001, # 学习率
     n_estimators = 1000,   # 模型个数
@@ -185,10 +235,9 @@ means = grid_result.cv_results_['mean_test_score']
 params = grid_result.cv_results_['params']
 for mean, param in zip(means, params):
     print('%f with: %r' % (mean, param))
-
 ```
 
-##四、Adaboost
+##5. Adaboost
 
 Adaboost（Adaptive Boosting，自适应增强）有Yoav Freund 和Robert Schapire在1995年提出。它的自适应在于：前一个基本分类器分错的样本会得到加强，加权后的全体样本再次被用来训练下一个基本分类器。同时，在每一轮中加入一个新的弱分类器，直到达到某个预定的足够小的错误率或达到预先指定的最大迭代次数。
 
@@ -250,6 +299,7 @@ Adaboost（Adaptive Boosting，自适应增强）有Yoav Freund 和Robert Schapi
    $$
    G(x) = sign(f(x)) = sign(\sum_{1}^{M}a_m G_m(x))
    $$
+
 
 
 **Adaboost算法举例**
