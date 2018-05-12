@@ -14,6 +14,36 @@ LDA的应用方向
 1. **一词多义**，一个词可能被映射到多个主题中，例如“大理”在小说中可能被映射为“武侠小说”，在旅游上下文中可能被映射为“旅游胜地”；
 2. **多词一义**，多个词可能被映射到某个主题的概率很高。
 
+### 1. LDA涉及的主要问题
+
+####1.1 共轭先验分布
+
+
+
+
+
+####1.2 Dirichlet分布
+
+
+
+
+
+####1.3 LDA模型
+
+
+
+
+
+
+
+**Gibbs采样算法及学习参数**
+
+
+
+
+
+###2. Gamma函数与Beta分布
+
 **$\Gamma$函数**
 
 ![Gamma函数](imgs_md/Gamma函数.png)
@@ -24,15 +54,24 @@ $\Gamma$函数是阶乘在实数上的推广，$\Gamma(x) = \int_{0}^{+\infin} t
 
 **Beta分布**
 
+Beta分布的概率密度函数为
+$$
+f(x) = \begin{cases}
+\frac{1}{B(\alpha, \beta)} x^{\alpha -1}(1-x)^{\beta - 1}，x \in [0, 1] \\
+0，\qquad 其他
+\end{cases} \\
+B(\alpha, \beta) = \int_{0}^{1} x^{\alpha-1}(1 - x)^{\beta-1}dx = \frac{\Gamma(\alpha)\Gamma(\beta)}{\Gamma(\alpha + \beta)}
+$$
+Beta分布的期望为
+$$
+E[X] = \int_0^1x \cdot \frac{1}{B(\alpha, \beta)}x^{\alpha-1} (1-x)^{\beta - 1}dx  \qquad \qquad \qquad \ \\\
+= \frac{1}{B(\alpha, \beta)}\int_0^1x^{(\alpha+1) - 1} (1-x)^{\beta - 1}dx  \qquad \quad \ \ \ \ \\
+= \frac{B(\alpha+1, \beta)}{B(\alpha, \beta)} =\frac{\Gamma(\alpha + \beta)}{\Gamma(\alpha)\Gamma(\beta)}  \cdot\frac{\Gamma(\alpha+1)\Gamma(\beta)}{\Gamma(\alpha +1+ \beta)}\\
+= \frac{\alpha}{\alpha + \beta} \qquad \qquad \qquad \qquad \qquad \qquad  \qquad \ \ \ \
+$$
+可以得出：当$\alpha > \beta$时图形是左偏，当$\alpha < \beta$时图形是右偏。
 
-
-
-
-
-
-
-
-
+![Beta分布](imgs_md/Beta分布.png)
 
 
 
