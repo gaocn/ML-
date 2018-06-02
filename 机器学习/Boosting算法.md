@@ -303,9 +303,6 @@ Adaboost（Adaptive Boosting，自适应增强）有Yoav Freund 和Robert Schapi
    $$
 
 
-
-
-
 Adaboost算法可以看做是采用指数损失函数的提升算法，训练误差以指数速率下降，Adaboost算法不需要事先知道下界具有自适应性，它能自适应弱分类器的训练误差率。
 
 **Adaboost算法举例**
