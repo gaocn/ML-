@@ -1,7 +1,0 @@
-书面作业
-
-以下两题2选1，如果都能完成会受到老师极度赞赏
-1 请说一下在《ImageNet Classification with Deep Convolutional Neural Networks》一文中4.2节所描述的“dropout”是怎样一种处理技术？
-2 在以下链接
-http://www.vlfeat.org/matconvnet/
-下载及部署matconvnet，这是MatLAB上的CNN工具包，并挑选一个范例模型跑一下看看，抓图实验过程
