@@ -26,6 +26,12 @@
 
 **构建核函数的规则[^2][^3]**
 
+**表示定理[^5]**
+
+
+
+**支持向量机神经网络**：《人工神经网络理论、设计及应用_第2版》189页，
+
 
 
 
@@ -47,5 +53,5 @@
 [^1]: Geometrical and Statistical Properties of Systems of Linear Inequalities with Applications in Pattern Recognition
 [^2]: Kernel Methods for Pattern Analysis
 [^3]: Learning with Kernels
-[^4]: PRML：Pattern Recognition and Machine Learning，293
-[^5]: 机器学习 周志华
+[^4]: PRML：Pattern Recognition and Machine Learning，Kernel Method，page 293
+[^5]: 机器学习 周志华，核方法，137页
