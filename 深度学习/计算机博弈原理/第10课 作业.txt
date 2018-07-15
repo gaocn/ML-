@@ -1,0 +1,7 @@
+书面作业
+
+1 画出漂亮的卷积神经网络结构图是件赏心悦目的事情，试寻找合适的神经网络可视化工具，根据《Mastering the Game of Go with Deep Neural Networks and Tree Search》一文中第27页所描述的策略网络结构，画出其具体结构
+
+2 （可选）在以下链接有AlphaGo的一套山寨版源代码（Deepmind的源代码是不公开的）
+https://github.com/Rochester-NRT/RocAlphaGo
+试部署并运行测试之，抓图整个过程，对代码的质量给出你的评论
